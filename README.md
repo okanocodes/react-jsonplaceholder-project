@@ -42,9 +42,9 @@ Supports adding, editing, and deleting posts/users with smooth updates and optim
 
 ```bash
 src/
-├── components/ # Reusable UI components (Table, Button, Modal, etc.)
-├── lib/ # Custom hooks
-└── pages/ # Page-level components (PostsPage, UsersPage)
+├── components/   # Reusable UI components (Table, Button, Modal, etc.)
+├── lib/          # Custom hooks
+└── pages/        # Page-level components (PostsPage, UsersPage)
 ```
 
 ---
