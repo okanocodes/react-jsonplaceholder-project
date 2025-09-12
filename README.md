@@ -40,6 +40,7 @@ Supports adding, editing, and deleting posts/users with smooth updates and optim
 
 ## Project Structure
 
+```bash
 src/
 
 ├── components/ # Reusable UI components (Table, Button, Modal, etc.)
@@ -47,6 +48,7 @@ src/
 ├── lib/ # Custom hooks
 
 └── pages/ # Page-level components (PostsPage, UsersPage)
+```
 
 ---
 
