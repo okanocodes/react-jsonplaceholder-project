@@ -61,9 +61,13 @@ Clone the repo and install dependencies:
 
 ```bash
 git  clone  https://github.com/okanocodes/react-jsonplaceholder-project.git
+```
 
+```bash
 cd  react-jsonplaceholder-project
+```
 
+```bash
 pnpm  install
 ```
 
