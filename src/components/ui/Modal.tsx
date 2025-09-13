@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { RxCross1 } from "react-icons/rx";
 
 interface ModalProps {
   isOpen: boolean;
@@ -17,10 +18,10 @@ const Modal = ({ isOpen, onClose, children }: ModalProps) => {
                             w-full relative  text-white"
       >
         <button
-          className="absolute top-2 right-2 text-gray-100 dark:text-gray-500 hover:text-gray-700 cursor-pointer"
+          className="absolute top-3 right-3 text-gray-100 dark:text-gray-500 hover:text-gray-700 cursor-pointer"
           onClick={onClose}
         >
-          &#x2715; {/* Close button */}
+          <RxCross1 size={"20px"} />
         </button>
         {children}
       </div>
