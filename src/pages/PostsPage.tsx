@@ -130,6 +130,17 @@ const PostsPage = () => {
     setDeletingPostId(id);
   };
 
+  const displayPosts = useMemo(() => {
+    if (!posts) return [];
+    return posts.map((p) => ({
+      id: p.id,
+      title: p.title,
+      body: p.body,
+      user: userMap[p.userId] ?? String(p.userId),
+      userId: p.userId,
+    }));
+  }, [posts, userMap]);
+
   if (isPending || usersLoading) {
     return <Loading />;
   }
@@ -176,9 +187,6 @@ const PostsPage = () => {
     );
   }
 
-  // ---------- Render ----------
-  const headers: (keyof Post)[] = ["userId", "id", "title"];
-
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -191,20 +199,10 @@ const PostsPage = () => {
         </div>
       </div>
 
-      <Table
-        headers={headers}
-        rows={posts || []}
+      <Table<Post & { user: string }>
+        headers={["user", "id", "title"]}
+        rows={displayPosts}
         rowIdPrefix="post"
-        getCellValue={(post, header) => {
-          if (header === "userId") {
-            return userMap[post.userId] ?? post.userId;
-          }
-          return String(post[header]);
-        }}
-        getRowValue={(post, header) => {
-          if (header === "userId") return userMap[post.userId] ?? post.userId;
-          return post[header];
-        }}
         actions={(post) => (
           <div className="flex flex-col lg:flex-row gap-2">
             <Button onClick={() => openEditForm(post)} kind="edit">

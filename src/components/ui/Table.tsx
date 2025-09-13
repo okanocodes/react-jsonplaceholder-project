@@ -1,61 +1,56 @@
+// components/ui/Table.tsx
 import React, { useMemo, useState } from "react";
 
 export type SortDirection = "asc" | "desc" | null;
+type Primitive = string | number | boolean | null | undefined;
 
-interface TableProps<T extends object> {
-  headers: (keyof T)[];
-  rows: T[];
+interface TableProps<Row extends object> {
+  headers: (keyof Row)[];
+  rows: Row[];
   /**
-   * If provided, used to render a specific cell. Fully typed.
+   * Use renderCell when you need custom formatting per cell.
    */
-  getCellValue?: (
-    row: T,
-    header: keyof T,
+  renderCell?: (
+    value: Row[keyof Row],
+    row: Row,
+    header: keyof Row,
     rowIdx: number,
     cellIdx: number
   ) => React.ReactNode;
 
-  /**
-   * Optional function to compute a sortable value for a given row/header.
-   * If omitted, table will use row[header] (stringified) for sorting.
-   */
-  getRowValue?: (row: T, header: keyof T) => unknown;
+  getRowValue?: (row: Row, header: keyof Row) => Primitive;
 
-  renderCell?: (
-    row: T,
-    header: keyof T,
-    rowIdx: number,
-    cellIdx: number
-  ) => React.ReactNode; // kept for backward compat (calls before fallback)
+  actions?: (row: Row, rowIdx: number) => React.ReactNode;
 
-  actions?: (row: T, rowIdx: number) => React.ReactNode;
-
-  /**
-   * Optional prefix used for the row id attribute: `${rowIdPrefix}-${row.id}`.
-   * If row has no `id` property, falls back to `rowIdx+1`.
-   */
+  rowIdKey?: keyof Row;
   rowIdPrefix?: string;
+
+  initialSort?: { header: keyof Row; dir: Exclude<SortDirection, null> };
 }
 
-function Table<T extends object>({
+function Table<Row extends object>({
   headers,
   rows,
   renderCell,
-  actions,
   getRowValue,
-  getCellValue,
+  actions,
+  rowIdKey = "id" as keyof Row,
   rowIdPrefix,
-}: TableProps<T>) {
-  const [sortHeader, setSortHeader] = useState<keyof T | null>(null);
-  const [sortDir, setSortDir] = useState<SortDirection>(null);
+  initialSort,
+}: TableProps<Row>) {
+  const [sortHeader, setSortHeader] = useState<keyof Row | null>(
+    initialSort?.header ?? null
+  );
+  const [sortDir, setSortDir] = useState<SortDirection>(
+    initialSort?.dir ?? null
+  );
 
-  const toggleSort = (h: keyof T) => {
+  const toggleSort = (h: keyof Row) => {
     if (sortHeader !== h) {
       setSortHeader(h);
       setSortDir("asc");
       return;
     }
-    // same header: cycle asc -> desc -> none
     if (sortDir === "asc") setSortDir("desc");
     else if (sortDir === "desc") {
       setSortHeader(null);
@@ -66,40 +61,38 @@ function Table<T extends object>({
   const sortedRows = useMemo(() => {
     if (!sortHeader || !sortDir) return rows;
     const copy = [...rows];
+
+    const toSortable = (row: Row) => {
+      if (getRowValue) return getRowValue(row, sortHeader);
+      // row[sortHeader] is typed as Row[keyof Row]; cast to Primitive for comparison
+      return row[sortHeader] as unknown as Primitive;
+    };
+
     copy.sort((a, b) => {
-      const aRec = a as unknown as Record<string, unknown>;
-      const bRec = b as unknown as Record<string, unknown>;
+      const avRaw = toSortable(a);
+      const bvRaw = toSortable(b);
 
-      const avRaw = getRowValue
-        ? getRowValue(a, sortHeader)
-        : aRec[String(sortHeader)];
-      const bvRaw = getRowValue
-        ? getRowValue(b, sortHeader)
-        : bRec[String(sortHeader)];
+      if (avRaw == null && bvRaw == null) return 0;
+      if (avRaw == null) return sortDir === "asc" ? 1 : -1;
+      if (bvRaw == null) return sortDir === "asc" ? -1 : 1;
 
-      const av = avRaw as unknown;
-      const bv = bvRaw as unknown;
-
-      if (av == null && bv == null) return 0;
-      if (av == null) return sortDir === "asc" ? 1 : -1;
-      if (bv == null) return sortDir === "asc" ? -1 : 1;
-
-      if (typeof av === "number" && typeof bv === "number") {
-        return sortDir === "asc" ? av - bv : bv - av;
+      if (typeof avRaw === "number" && typeof bvRaw === "number") {
+        return sortDir === "asc" ? avRaw - bvRaw : bvRaw - avRaw;
       }
 
-      const sa = String(av).toLowerCase();
-      const sb = String(bv).toLowerCase();
+      const sa = String(avRaw).toLowerCase();
+      const sb = String(bvRaw).toLowerCase();
       if (sa < sb) return sortDir === "asc" ? -1 : 1;
       if (sa > sb) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
+
     return copy;
   }, [rows, sortHeader, sortDir, getRowValue]);
 
   return (
     <div className="h-[calc(100vh-200px)] overflow-auto rounded-box border border-base-content/5 bg-base-100">
-      <table className="table table-pin-rows">
+      <table className="table table-pin-rows w-full">
         <thead>
           <tr>
             {headers.map((header) => (
@@ -125,39 +118,34 @@ function Table<T extends object>({
                 </div>
               </th>
             ))}
+
             {actions && <th className="flex justify-end">Actions</th>}
           </tr>
         </thead>
+
         <tbody>
           {sortedRows.map((row, rowIdx) => {
-            const rowRecord = row as unknown as Record<string, unknown>;
-            const rawId = rowRecord["id"];
+            // use typed key access if provided
+            const rawId = rowIdKey ? row[rowIdKey] : undefined;
             const rowIdValue =
-              typeof rawId === "number" || typeof rawId === "string"
+              typeof rawId === "string" || typeof rawId === "number"
                 ? rawId
-                : rowIdx + 1;
-
+                : rowIdx;
             const trId = rowIdPrefix
               ? `${rowIdPrefix}-${rowIdValue}`
               : undefined;
             const trKey = typeof rowIdValue === "number" ? rowIdValue : rowIdx;
 
             return (
-              <tr key={trKey} className="hover:bg-base-300" id={trId}>
+              <tr key={trKey} id={trId} className="hover:bg-base-300">
                 {headers.map((header, cellIdx) => {
-                  // Priority: getCellValue -> renderCell (compat) -> fallback (safe index)
-                  const content = getCellValue
-                    ? getCellValue(row, header, rowIdx, cellIdx)
-                    : renderCell
-                      ? renderCell(row, header, rowIdx, cellIdx)
-                      : String(
-                          (row as unknown as Record<string, unknown>)[
-                            String(header)
-                          ] ?? ""
-                        );
-
+                  const raw = row[header];
+                  const content = renderCell
+                    ? renderCell(raw, row, header, rowIdx, cellIdx)
+                    : String((raw as unknown) ?? "");
                   return <td key={cellIdx}>{content}</td>;
                 })}
+
                 {actions && (
                   <td className="flex justify-end">{actions(row, rowIdx)}</td>
                 )}

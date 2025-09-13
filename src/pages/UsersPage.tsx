@@ -139,9 +139,10 @@ const UsersPage = () => {
         </div>
       </div>
 
-      <Table
+      <Table<User>
         headers={headers}
         rows={users}
+        rowIdKey="id"
         rowIdPrefix="user"
         actions={(user) => (
           <div className="flex flex-col lg:flex-row gap-2">
