@@ -60,32 +60,33 @@ function Table<Row extends object>({
 
   const sortedRows = useMemo(() => {
     if (!sortHeader || !sortDir) return rows;
+
     const copy = [...rows];
 
-    const toSortable = (row: Row) => {
+    const toSortable = (row: Row): Primitive => {
       if (getRowValue) return getRowValue(row, sortHeader);
-      // row[sortHeader] is typed as Row[keyof Row]; cast to Primitive for comparison
       return row[sortHeader] as unknown as Primitive;
     };
 
-    copy.sort((a, b) => {
-      const avRaw = toSortable(a);
-      const bvRaw = toSortable(b);
+    const compareValues = (a: Primitive, b: Primitive): number => {
+      if (a == null && b == null) return 0;
+      if (a == null) return sortDir === "asc" ? 1 : -1;
+      if (b == null) return sortDir === "asc" ? -1 : 1;
 
-      if (avRaw == null && bvRaw == null) return 0;
-      if (avRaw == null) return sortDir === "asc" ? 1 : -1;
-      if (bvRaw == null) return sortDir === "asc" ? -1 : 1;
-
-      if (typeof avRaw === "number" && typeof bvRaw === "number") {
-        return sortDir === "asc" ? avRaw - bvRaw : bvRaw - avRaw;
+      if (typeof a === "number" && typeof b === "number") {
+        return sortDir === "asc" ? a - b : b - a;
       }
 
-      const sa = String(avRaw).toLowerCase();
-      const sb = String(bvRaw).toLowerCase();
+      const sa = String(a).toLowerCase();
+      const sb = String(b).toLowerCase();
       if (sa < sb) return sortDir === "asc" ? -1 : 1;
       if (sa > sb) return sortDir === "asc" ? 1 : -1;
       return 0;
-    });
+    };
+
+    copy.sort((rowA, rowB) =>
+      compareValues(toSortable(rowA), toSortable(rowB))
+    );
 
     return copy;
   }, [rows, sortHeader, sortDir, getRowValue]);
