@@ -1,9 +1,6 @@
-// src/api.ts
 import axios from "axios";
 
 const API_BASE = "https://jsonplaceholder.typicode.com";
-
-// Types
 
 export interface User {
   id: number;
@@ -17,6 +14,7 @@ export interface Post {
   id: number;
   title: string;
   body?: string;
+  user?: string;
 }
 
 // User API

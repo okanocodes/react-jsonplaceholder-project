@@ -199,7 +199,7 @@ const PostsPage = () => {
         </div>
       </div>
 
-      <Table<Post & { user: string }>
+      <Table<Post>
         headers={["user", "id", "title"]}
         rows={displayPosts}
         rowIdPrefix="post"
